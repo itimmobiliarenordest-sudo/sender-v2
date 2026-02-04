@@ -9,70 +9,96 @@
     <style>
         body { background-color: #f4f7f6; padding: 40px 10px; }
         .card { border: none; border-radius: 15px; }
-        .preview-card { display: none; border-left: 5px solid #0d6efd; background: #fff; }
-        .img-preview { width: 100%; border-radius: 10px; height: 200px; object-fit: cover; background: #eee; }
+        .preview-card { display: none; border-left: 5px solid #dc3545; background: #fff; }
+        .img-preview { width: 100%; border-radius: 10px; height: 200px; object-fit: cover; background: #eee; cursor: pointer; }
         .spinner-border { width: 1.5rem; height: 1.5rem; }
         .upload-area { border: 2px dashed #ccc; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 15px; cursor: pointer; }
         .upload-area:hover { border-color: #0d6efd; background: #f8f9fa; }
+        .form-label-sm { font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 2px; }
     </style>
 </head>
 <body>
 
 <div class="container" style="max-width: 500px;">
     <div class="card shadow-lg p-4">
-        <h3 class="text-center mb-4">🏠 Invio Rapido</h3>
+        <h3 class="text-center mb-4">🏠 Social Poster</h3>
         
         <div class="input-group mb-3">
-            <input type="text" id="idImmobile" class="form-control" placeholder="ID o Rif (es: 12345)" aria-label="ID Immobile">
+            <input type="text" id="idImmobile" class="form-control" placeholder="ID o Rif (es: 12345)">
             <button class="btn btn-primary" onclick="cercaDati()" id="btnCerca">
-                <i class="fa-solid fa-magnifying-glass"></i> Cerca
+                <i class="fa-solid fa-magnifying-glass"></i> Carica
             </button>
         </div>
 
         <div class="upload-area" onclick="document.getElementById('fotoLocale').click()">
-            <small class="text-muted"><i class="fa-solid fa-image"></i> Carica foto manuale (opzionale test)</small>
+            <small class="text-muted"><i class="fa-solid fa-camera"></i> Cambia foto (opzionale)</small>
             <input type="file" id="fotoLocale" accept="image/*" style="display:none" onchange="anteprimaFotoLocale(this)">
             <div id="fileName" class="small fw-bold text-primary mt-1"></div>
         </div>
 
         <div id="loader" class="text-center d-none my-3">
             <div class="spinner-border text-primary" role="status"></div>
-            <p class="small text-muted">Recupero dati da Gabetti...</p>
+            <p class="small text-muted">Interrogazione API...</p>
         </div>
 
         <div id="preview" class="preview-card p-3 shadow-sm rounded">
-            <img id="p-img" src="" class="img-preview mb-3">
-            <h5 id="p-titolo" class="fw-bold text-primary"></h5>
-            <div class="row small mb-3 text-secondary">
-                <div class="col-6"><i class="fa-solid fa-ruler-combined"></i> <span id="p-mq"></span> m²</div>
-                <div class="col-6"><i class="fa-solid fa-bed"></i> <span id="p-camere"></span></div>
-                <div class="col-6"><i class="fa-solid fa-bath"></i> <span id="p-bagni"></span></div>
-                <div class="col-6"><i class="fa-solid fa-tag"></i> <span id="p-prezzo"></span></div>
+            <img id="p-img" src="" class="img-preview mb-3" onclick="document.getElementById('fotoLocale').click()" title="Clicca per cambiare foto">
+            
+            <div class="mb-2">
+                <label class="form-label-sm">TITOLO / TIPOLOGIA</label>
+                <input type="text" id="edit-titolo" class="form-control form-control-sm">
             </div>
-            <button class="btn btn-danger w-100 fw-bold" onclick="inviaATelegram()" id="btnInvia">
-                <i class="fa-regular fa-paper-plane"></i> PUBBLICA SU TELEGRAM
+
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <label class="form-label-sm">COMUNE</label>
+                    <input type="text" id="edit-comune" class="form-control form-control-sm">
+                </div>
+                <div class="col-6">
+                    <label class="form-label-sm">PREZZO (€)</label>
+                    <input type="number" id="edit-prezzo" class="form-control form-control-sm">
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <label class="form-label-sm">MQ</label>
+                    <input type="text" id="edit-mq" class="form-control form-control-sm">
+                </div>
+                <div class="col-4">
+                    <label class="form-label-sm">CAMERE</label>
+                    <input type="text" id="edit-camere" class="form-control form-control-sm">
+                </div>
+                <div class="col-4">
+                    <label class="form-label-sm">BAGNI</label>
+                    <input type="text" id="edit-bagni" class="form-control form-control-sm">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label-sm">LINK SITO GABETTI</label>
+                <input type="text" id="edit-link" class="form-control form-control-sm">
+            </div>
+
+            <button class="btn btn-danger w-100 fw-bold py-2" onclick="inviaATelegram()" id="btnInvia">
+                <i class="fa-regular fa-paper-plane"></i> INVIA ORA
             </button>
         </div>
     </div>
 </div>
 
 <script>
-    // --- CONFIGURAZIONE ---
     const WORKER_URL = 'https://telegram-gabetti-bot.it-immobiliarenordest.workers.dev'; 
-    let datiSalvati = null;
-    let fotoBase64 = null; // Memorizza la foto caricata manualmente
+    let fotoBase64 = null;
+    let urlOriginaleFoto = "";
 
-    // Gestione caricamento foto manuale
     function anteprimaFotoLocale(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 fotoBase64 = e.target.result;
                 document.getElementById('fileName').innerText = input.files[0].name;
-                // Se la preview è già aperta, aggiorna l'immagine
-                if(document.getElementById('preview').style.display === 'block') {
-                    document.getElementById('p-img').src = fotoBase64;
-                }
+                document.getElementById('p-img').src = fotoBase64;
             };
             reader.readAsDataURL(input.files[0]);
         }
@@ -84,47 +110,54 @@
 
         setLoading(true);
         document.getElementById('preview').style.display = 'none';
+        fotoBase64 = null; // Reset foto manuale ogni nuova ricerca
+        document.getElementById('fileName').innerText = "";
 
         try {
             const r = await fetch(`${WORKER_URL}/get-immobile?id=${id}`);
             const data = await r.json();
 
             if (data && data.success) {
-                datiSalvati = data;
-                renderPreview(data);
+                popolaCampi(data);
             } else {
-                alert("Immobile non trovato. Controlla l'ID.");
+                alert("Immobile non trovato.");
             }
         } catch (err) {
-            alert("Errore di connessione al Worker.");
+            alert("Errore connessione.");
         } finally {
             setLoading(false);
         }
     }
 
-    function renderPreview(d) {
-        // Se c'è una foto caricata manualmente, usa quella, altrimenti usa quella di Gabetti
-        document.getElementById('p-img').src = fotoBase64 ? fotoBase64 : d.img;
-        document.getElementById('p-titolo').innerText = `${d.tipologia} a ${d.comune}`;
-        document.getElementById('p-mq').innerText = d.metri_quadri;
-        document.getElementById('p-camere').innerText = d.camere + (d.camere == 1 ? " camera" : " camere");
-        document.getElementById('p-bagni').innerText = d.bagni + (d.bagni == 1 ? " bagno" : " bagni");
-        document.getElementById('p-prezzo').innerText = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(d.prezzo);
+    function popolaCampi(d) {
+        urlOriginaleFoto = d.img;
+        document.getElementById('p-img').src = d.img;
+        document.getElementById('edit-titolo').value = d.tipologia;
+        document.getElementById('edit-comune').value = d.comune;
+        document.getElementById('edit-mq').value = d.metri_quadri;
+        document.getElementById('edit-camere').value = d.camere;
+        document.getElementById('edit-bagni').value = d.bagni;
+        document.getElementById('edit-prezzo').value = d.prezzo;
+        document.getElementById('edit-link').value = d.link;
         
         document.getElementById('preview').style.display = 'block';
     }
 
     async function inviaATelegram() {
-        if (!datiSalvati) return;
-        
         const btn = document.getElementById('btnInvia');
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Invio in corso...';
+        btn.innerHTML = 'Invio...';
 
-        // Se l'utente ha caricato una foto, sostituiamo l'URL con la stringa Base64
+        // Creiamo il pacchetto dati leggendo dai campi INPUT (non dalle API)
         const payload = {
-            ...datiSalvati,
-            img: fotoBase64 ? fotoBase64 : datiSalvati.img
+            tipologia: document.getElementById('edit-titolo').value,
+            comune: document.getElementById('edit-comune').value,
+            metri_quadri: document.getElementById('edit-mq').value,
+            camere: document.getElementById('edit-camere').value,
+            bagni: document.getElementById('edit-bagni').value,
+            prezzo: document.getElementById('edit-prezzo').value,
+            link: document.getElementById('edit-link').value,
+            img: fotoBase64 ? fotoBase64 : urlOriginaleFoto
         };
 
         try {
@@ -135,18 +168,17 @@
             });
 
             const result = await r.json();
-
             if (result.ok) {
-                alert("✅ Messaggio inviato correttamente!");
+                alert("✅ Inviato!");
                 location.reload();
             } else {
-                alert("❌ Errore durante l'invio: " + (result.error || "Parametri non validi"));
+                alert("❌ Errore Telegram");
             }
         } catch (e) {
-            alert("Errore tecnico nell'invio.");
+            alert("Errore tecnico");
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> PUBBLICA SU TELEGRAM';
+            btn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> INVIA ORA';
         }
     }
 
