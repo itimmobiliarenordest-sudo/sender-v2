@@ -9,19 +9,22 @@
     <style>
         body { background-color: #f4f7f6; padding: 40px 10px; }
         .card { border: none; border-radius: 15px; }
-        .preview-card { display: none; border-left: 5px solid #dc3545; background: #fff; }
+        .preview-card { display: none; border-left: 5px solid #0d6efd; background: #fff; }
         .img-preview { width: 100%; border-radius: 10px; height: 200px; object-fit: cover; background: #eee; cursor: pointer; }
         .spinner-border { width: 1.5rem; height: 1.5rem; }
         .upload-area { border: 2px dashed #ccc; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 15px; cursor: pointer; }
         .upload-area:hover { border-color: #0d6efd; background: #f8f9fa; }
         .form-label-sm { font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 2px; }
+        #status-banner { font-size: 0.75rem; padding: 4px; border-radius: 8px; margin-bottom: 15px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container" style="max-width: 500px;">
+    <div id="status-banner" class="text-center fw-bold shadow-sm"></div>
+
     <div class="card shadow-lg p-4">
-        <h3 class="text-center mb-4">🏠 Invio Telegram</h3>
+        <h3 id="main-title" class="text-center mb-4">🏠 Social Poster</h3>
         
         <div class="input-group mb-3">
             <input type="text" id="idImmobile" class="form-control" placeholder="ID o Rif (es: 12345)">
@@ -55,8 +58,8 @@
                     <input type="text" id="edit-comune" class="form-control form-control-sm">
                 </div>
                 <div class="col-6">
-                    <label class="form-label-sm">PREZZO (€)</label>
-                    <input type="text" id="edit-prezzo" class="form-control form-control-sm" placeholder="Es: 155000 o 0 per Trattativa Riservata">
+                    <label class="form-label-sm">PREZZO</label>
+                    <input type="text" id="edit-prezzo" class="form-control form-control-sm" placeholder="Es: 155000 o 0">
                 </div>
             </div>
 
@@ -92,6 +95,35 @@
     let fotoBase64 = null;
     let urlOriginaleFoto = "";
 
+    // Funzione che controlla se il Worker è in modalità DEBUG
+    async function controllaStato() {
+        const title = document.getElementById('main-title');
+        const banner = document.getElementById('status-banner');
+        
+        try {
+            const r = await fetch(`${WORKER_URL}/get-status`);
+            const status = await r.json();
+            
+            banner.style.display = 'block';
+            if (status.debug) {
+                title.innerHTML = "⚠️ TEST di Invio";
+                title.classList.add("text-warning");
+                banner.innerHTML = "MODALITÀ TEST ATTIVA (Invio solo a ID Personale)";
+                banner.className = "alert alert-warning text-center fw-bold shadow-sm";
+            } else {
+                title.innerHTML = "🏠 Social Poster";
+                title.classList.add("text-success");
+                banner.innerHTML = "MODALITÀ LIVE (Canale e Gruppo Attivi)";
+                banner.className = "alert alert-success text-center fw-bold shadow-sm";
+            }
+        } catch (e) {
+            console.warn("Stato del worker non raggiungibile.");
+        }
+    }
+
+    // Esegui il controllo stato al caricamento
+    window.onload = controllaStato;
+
     function anteprimaFotoLocale(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -110,7 +142,7 @@
 
         setLoading(true);
         document.getElementById('preview').style.display = 'none';
-        fotoBase64 = null; // Reset foto manuale ogni nuova ricerca
+        fotoBase64 = null; 
         document.getElementById('fileName').innerText = "";
 
         try {
@@ -146,9 +178,8 @@
     async function inviaATelegram() {
         const btn = document.getElementById('btnInvia');
         btn.disabled = true;
-        btn.innerHTML = 'Invio...';
+        btn.innerHTML = 'Invio in corso...';
 
-        // Creiamo il pacchetto dati leggendo dai campi INPUT (non dalle API)
         const payload = {
             tipologia: document.getElementById('edit-titolo').value,
             comune: document.getElementById('edit-comune').value,
@@ -169,13 +200,13 @@
 
             const result = await r.json();
             if (result.ok) {
-                alert("✅ Inviato!");
+                alert("✅ Messaggi inviati con successo!");
                 location.reload();
             } else {
-                alert("❌ Errore Telegram");
+                alert("❌ Errore Telegram: " + (result.details?.description || "Sconosciuto"));
             }
         } catch (e) {
-            alert("Errore tecnico");
+            alert("Errore tecnico durante l'invio.");
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> INVIA ORA';
