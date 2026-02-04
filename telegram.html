@@ -10,8 +10,10 @@
         body { background-color: #f4f7f6; padding: 40px 10px; }
         .card { border: none; border-radius: 15px; }
         .preview-card { display: none; border-left: 5px solid #0d6efd; background: #fff; }
-        .img-preview { width: 100%; border-radius: 10px; height: 200px; object-fit: cover; }
+        .img-preview { width: 100%; border-radius: 10px; height: 200px; object-fit: cover; background: #eee; }
         .spinner-border { width: 1.5rem; height: 1.5rem; }
+        .upload-area { border: 2px dashed #ccc; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 15px; cursor: pointer; }
+        .upload-area:hover { border-color: #0d6efd; background: #f8f9fa; }
     </style>
 </head>
 <body>
@@ -25,6 +27,12 @@
             <button class="btn btn-primary" onclick="cercaDati()" id="btnCerca">
                 <i class="fa-solid fa-magnifying-glass"></i> Cerca
             </button>
+        </div>
+
+        <div class="upload-area" onclick="document.getElementById('fotoLocale').click()">
+            <small class="text-muted"><i class="fa-solid fa-image"></i> Carica foto manuale (opzionale test)</small>
+            <input type="file" id="fotoLocale" accept="image/*" style="display:none" onchange="anteprimaFotoLocale(this)">
+            <div id="fileName" class="small fw-bold text-primary mt-1"></div>
         </div>
 
         <div id="loader" class="text-center d-none my-3">
@@ -52,6 +60,23 @@
     // --- CONFIGURAZIONE ---
     const WORKER_URL = 'https://telegram-gabetti-bot.it-immobiliarenordest.workers.dev'; 
     let datiSalvati = null;
+    let fotoBase64 = null; // Memorizza la foto caricata manualmente
+
+    // Gestione caricamento foto manuale
+    function anteprimaFotoLocale(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                fotoBase64 = e.target.result;
+                document.getElementById('fileName').innerText = input.files[0].name;
+                // Se la preview è già aperta, aggiorna l'immagine
+                if(document.getElementById('preview').style.display === 'block') {
+                    document.getElementById('p-img').src = fotoBase64;
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 
     async function cercaDati() {
         const id = document.getElementById('idImmobile').value.trim();
@@ -78,7 +103,8 @@
     }
 
     function renderPreview(d) {
-        document.getElementById('p-img').src = d.img;
+        // Se c'è una foto caricata manualmente, usa quella, altrimenti usa quella di Gabetti
+        document.getElementById('p-img').src = fotoBase64 ? fotoBase64 : d.img;
         document.getElementById('p-titolo').innerText = `${d.tipologia} a ${d.comune}`;
         document.getElementById('p-mq').innerText = d.metri_quadri;
         document.getElementById('p-camere').innerText = d.camere + (d.camere == 1 ? " camera" : " camere");
@@ -95,18 +121,26 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Invio in corso...';
 
+        // Se l'utente ha caricato una foto, sostituiamo l'URL con la stringa Base64
+        const payload = {
+            ...datiSalvati,
+            img: fotoBase64 ? fotoBase64 : datiSalvati.img
+        };
+
         try {
             const r = await fetch(`${WORKER_URL}/send-telegram`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datiSalvati)
+                body: JSON.stringify(payload)
             });
 
-            if (r.ok) {
+            const result = await r.json();
+
+            if (result.ok) {
                 alert("✅ Messaggio inviato correttamente!");
                 location.reload();
             } else {
-                alert("❌ Errore durante l'invio.");
+                alert("❌ Errore durante l'invio: " + (result.error || "Parametri non validi"));
             }
         } catch (e) {
             alert("Errore tecnico nell'invio.");
