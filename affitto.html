@@ -117,14 +117,17 @@
             reader.readAsDataURL(input.files[0]);
         }
     }
-
 async function cercaDati() {
     const id = document.getElementById('idImmobile').value.trim();
     if (!id) return;
     setLoading(true);
+    
+    // Riconosce automaticamente se siamo nella pagina affitto o vendita
+    const isAffittoPage = window.location.pathname.includes('affitto');
+    const tipoParam = isAffittoPage ? '&tipo=affitto' : '';
+
     try {
-        // Se sei in affitto.html usa &tipo=affitto, altrimenti lascialo vuoto per vendita
-        const r = await fetch(`${WORKER_URL}/get-immobile?id=${id}${window.location.pathname.includes('affitto') ? '&tipo=affitto' : ''}`);
+        const r = await fetch(`${WORKER_URL}/get-immobile?id=${id}${tipoParam}`);
         const d = await r.json();
         
         if (d.success) {
@@ -136,20 +139,21 @@ async function cercaDati() {
             document.getElementById('edit-prezzo').value = d.prezzo;
             document.getElementById('edit-link').value = d.link;
 
-            // --- GESTIONE DINAMICA ETICHETTA CAMERE/LOCALI ---
-            const labelVani = document.querySelector('label[for="edit-camere"]') || document.querySelector('#edit-camere').previousElementSibling;
+            // --- AGGIORNAMENTO ETICHETTA (Camere vs Locali) ---
+            // Cerchiamo il label associato al campo edit-camere
+            const labelVani = document.querySelector('label[for="edit-camere"]');
             if (labelVani) {
-                labelVani.innerText = d.camereLabel; // "Camere" oppure "Locali"
+                labelVani.innerText = d.camereLabel; // Prende "Camere" o "Locali" dal Worker
             }
             document.getElementById('edit-camere').value = d.camere;
 
-            // --- GESTIONE TERRENO (NASCONDE CAMPI INUTILI) ---
-            const divVani = document.getElementById('edit-camere').parentElement;
-            const divBagni = document.getElementById('edit-bagni').parentElement;
+            // --- GESTIONE VISIVA TERRENO ---
+            const divVani = document.getElementById('edit-camere').closest('.col-4') || document.getElementById('edit-camere').parentElement;
+            const divBagni = document.getElementById('edit-bagni').closest('.col-4') || document.getElementById('edit-bagni').parentElement;
             
             if (d.tipologia === "Terreno") {
-                divVani.style.opacity = "0.3"; // Lo rendiamo quasi invisibile per far capire che non serve
-                divBagni.style.opacity = "0.3";
+                divVani.style.opacity = "0.2";
+                divBagni.style.opacity = "0.2";
                 document.getElementById('edit-camere').value = "0";
                 document.getElementById('edit-bagni').value = "0";
             } else {
@@ -159,9 +163,14 @@ async function cercaDati() {
             }
 
             document.getElementById('preview').style.display = 'block';
-        } else { alert("Immobile non trovato."); }
-    } catch (err) { alert("Errore API."); }
-    finally { setLoading(false); }
+        } else { 
+            alert("Immobile non trovato."); 
+        }
+    } catch (err) { 
+        alert("Errore nel caricamento dei dati."); 
+    } finally { 
+        setLoading(false); 
+    }
 }
 
     async function inviaATelegram() {
