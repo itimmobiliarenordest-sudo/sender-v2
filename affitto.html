@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Affitti</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f2f5; padding: 40px 10px; }
+        .card { border: none; border-radius: 15px; }
+        .preview-card { display: none; border-left: 5px solid #6f42c1; background: #fff; }
+        .img-preview { width: 100%; border-radius: 10px; height: 200px; object-fit: cover; cursor: pointer; }
+        .form-label-sm { font-size: 0.75rem; font-weight: bold; color: #666; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="container" style="max-width: 500px;">
+    <div id="status-banner" class="alert d-none text-center fw-bold shadow-sm"></div>
+
+    <div class="card shadow-lg p-4">
+        <h3 id="main-title" class="text-center mb-4">🗝️ Canale Affitto</h3>
+        
+        <div class="input-group mb-3">
+            <input type="text" id="idImmobile" class="form-control" placeholder="Riferimento (es: A001)">
+            <button class="btn btn-dark" onclick="cercaDati()" id="btnCerca">
+                <i class="fa-solid fa-magnifying-glass"></i> Carica
+            </button>
+        </div>
+
+        <div id="loader" class="text-center d-none my-3">
+            <div class="spinner-border text-primary" role="status"></div>
+        </div>
+
+        <div id="preview" class="preview-card p-3 shadow-sm rounded">
+            <img id="p-img" src="" class="img-preview mb-3" onclick="document.getElementById('fotoLocale').click()">
+            <input type="file" id="fotoLocale" accept="image/*" style="display:none" onchange="anteprimaFotoLocale(this)">
+            
+            <div class="mb-2">
+                <label class="form-label-sm">Tipologia</label>
+                <input type="text" id="edit-titolo" class="form-control form-control-sm">
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label-sm">Indirizzo (Città e Via)</label>
+                <input type="text" id="edit-indirizzo" class="form-control form-control-sm">
+            </div>
+
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <label class="form-label-sm">Canone Mensile (€)</label>
+                    <input type="text" id="edit-prezzo" class="form-control form-control-sm">
+                </div>
+                <div class="col-6">
+                    <label class="form-label-sm">Occupato / Libero</label>
+                    <input type="text" id="edit-occupato" class="form-control form-control-sm" placeholder="es: Libero da subito">
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <label class="form-label-sm">MQ</label>
+                    <input type="text" id="edit-mq" class="form-control form-control-sm">
+                </div>
+                <div class="col-4">
+                    <label class="form-label-sm">Camere</label>
+                    <input type="text" id="edit-camere" class="form-control form-control-sm">
+                </div>
+                <div class="col-4">
+                    <label class="form-label-sm">Bagni</label>
+                    <input type="text" id="edit-bagni" class="form-control form-control-sm">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label-sm">Link Sito</label>
+                <input type="text" id="edit-link" class="form-control form-control-sm">
+            </div>
+
+            <button class="btn btn-primary w-100 fw-bold py-2 shadow" onclick="inviaATelegram()" id="btnInvia">
+                <i class="fa-regular fa-paper-plane"></i> PUBBLICA SU CANALE AFFITTI
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const WORKER_URL = 'https://telegram-gabetti-bot.it-immobiliarenordest.workers.dev'; 
+    let fotoBase64 = null;
+    let urlOriginaleFoto = "";
+
+    async function controllaStato() {
+        try {
+            const r = await fetch(`${WORKER_URL}/get-status`);
+            const status = await r.json();
+            const banner = document.getElementById('status-banner');
+            banner.classList.remove('d-none');
+            if (status.debug) {
+                banner.className = "alert alert-warning text-center fw-bold shadow-sm";
+                banner.innerText = "MODALITÀ TEST ATTIVA";
+            } else {
+                banner.className = "alert alert-success text-center fw-bold shadow-sm";
+                banner.innerText = "MODALITÀ LIVE - CANALE AFFITTI";
+            }
+        } catch (e) {}
+    }
+    window.onload = controllaStato;
+
+    function anteprimaFotoLocale(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                fotoBase64 = e.target.result;
+                document.getElementById('p-img').src = fotoBase64;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    async function cercaDati() {
+        const id = document.getElementById('idImmobile').value.trim();
+        if (!id) return;
+        setLoading(true);
+        try {
+            // NOTA: Aggiungiamo &tipo=affitto per dire al worker di cercare negli affitti
+            const r = await fetch(`${WORKER_URL}/get-immobile?id=${id}&tipo=affitto`);
+            const d = await r.json();
+            if (d.success) {
+                urlOriginaleFoto = d.img;
+                document.getElementById('p-img').src = d.img;
+                document.getElementById('edit-titolo').value = d.tipologia;
+                document.getElementById('edit-indirizzo').value = d.comune + (d.via ? ", " + d.via : "");
+                document.getElementById('edit-mq').value = d.metri_quadri;
+                document.getElementById('edit-camere').value = d.camere;
+                document.getElementById('edit-bagni').value = d.bagni;
+                document.getElementById('edit-prezzo').value = d.prezzo;
+                document.getElementById('edit-link').value = d.link;
+                document.getElementById('preview').style.display = 'block';
+            } else { alert("Affitto non trovato."); }
+        } catch (err) { alert("Errore API."); }
+        finally { setLoading(false); }
+    }
+
+    async function inviaATelegram() {
+        const btn = document.getElementById('btnInvia');
+        btn.disabled = true;
+        const payload = {
+            isAffitto: true,
+            tipologia: document.getElementById('edit-titolo').value,
+            comune: document.getElementById('edit-indirizzo').value,
+            metri_quadri: document.getElementById('edit-mq').value,
+            camere: document.getElementById('edit-camere').value,
+            bagni: document.getElementById('edit-bagni').value,
+            prezzo: document.getElementById('edit-prezzo').value,
+            occupato: document.getElementById('edit-occupato').value,
+            link: document.getElementById('edit-link').value,
+            img: fotoBase64 || urlOriginaleFoto
+        };
+        try {
+            const r = await fetch(`${WORKER_URL}/send-telegram`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const res = await r.json();
+            if (res.ok) { alert("Inviato con successo!"); location.reload(); }
+        } catch (e) { alert("Errore invio."); }
+        finally { btn.disabled = false; }
+    }
+
+    function setLoading(show) {
+        document.getElementById('loader').classList.toggle('d-none', !show);
+        document.getElementById('btnCerca').disabled = show;
+    }
+</script>
+</body>
+</html>
