@@ -12,28 +12,24 @@
         .preview-card { display: none; border-left: 5px solid #6f42c1; background: #fff; }
         .img-preview { width: 100%; border-radius: 10px; height: 200px; object-fit: cover; cursor: pointer; }
         .form-label-sm { font-size: 0.75rem; font-weight: bold; color: #666; text-transform: uppercase; }
-
-.emoji-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid #dee2e6;
-    margin-bottom: 15px;
-}
-.emoji-item {
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: transform 0.2s;
-    user-select: none;
-}
-.emoji-item:hover {
-    transform: scale(1.3);
-}
-
         
+        .emoji-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 15px;
+        }
+        .emoji-item {
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+        .emoji-item:hover { transform: scale(1.3); }
     </style>
 </head>
 <body>
@@ -86,7 +82,7 @@
                     <input type="text" id="edit-mq" class="form-control form-control-sm">
                 </div>
                 <div class="col-4">
-                    <label class="form-label-sm">Camere</label>
+                    <label class="form-label-sm" for="edit-camere">Camere</label>
                     <input type="text" id="edit-camere" class="form-control form-control-sm">
                 </div>
                 <div class="col-4">
@@ -99,27 +95,28 @@
                 <label class="form-label-sm">Link Sito</label>
                 <input type="text" id="edit-link" class="form-control form-control-sm">
             </div>
+
             <label class="form-label-sm">Dashboard Emoji (Clicca per copiare)</label>
-<div class="emoji-bar" id="emojiBar">
-    <span class="emoji-item" onclick="copyEmoji('🏠')">🏠</span>
-    <span class="emoji-item" onclick="copyEmoji('🏢')">🏢</span>
-    <span class="emoji-item" onclick="copyEmoji('🏡')">🏡</span>
-    <span class="emoji-item" onclick="copyEmoji('🏗️')">🏗️</span>
-    <span class="emoji-item" onclick="copyEmoji('📍')">📍</span>
-    <span class="emoji-item" onclick="copyEmoji('💰')">💰</span>
-    <span class="emoji-item" onclick="copyEmoji('💶')">💶</span>
-    <span class="emoji-item" onclick="copyEmoji('⚡')">⚡</span>
-    <span class="emoji-item" onclick="copyEmoji('🛌')">🛌</span>
-    <span class="emoji-item" onclick="copyEmoji('🛀')">🛀</span>
-    <span class="emoji-item" onclick="copyEmoji('🌳')">🌳</span>
-    <span class="emoji-item" onclick="copyEmoji('🚗')">🚗</span>
-    <span class="emoji-item" onclick="copyEmoji('🔑')">🔑</span>
-    <span class="emoji-item" onclick="copyEmoji('🚀')">🚀</span>
-    <span class="emoji-item" onclick="copyEmoji('🐾')">🐾</span>
-    <span class="emoji-item" onclick="copyEmoji('🌿')">🌿</span>
-    <span class="emoji-item" onclick="copyEmoji('⚠️')">⚠️</span>
-    <span class="emoji-item" onclick="copyEmoji('🆕')">🆕</span>
-</div>
+            <div class="emoji-bar">
+                <span class="emoji-item" onclick="copyEmoji('🏠')">🏠</span>
+                <span class="emoji-item" onclick="copyEmoji('🏢')">🏢</span>
+                <span class="emoji-item" onclick="copyEmoji('🏡')">🏡</span>
+                <span class="emoji-item" onclick="copyEmoji('🏗️')">🏗️</span>
+                <span class="emoji-item" onclick="copyEmoji('📍')">📍</span>
+                <span class="emoji-item" onclick="copyEmoji('💰')">💰</span>
+                <span class="emoji-item" onclick="copyEmoji('💶')">💶</span>
+                <span class="emoji-item" onclick="copyEmoji('⚡')">⚡</span>
+                <span class="emoji-item" onclick="copyEmoji('🛌')">🛌</span>
+                <span class="emoji-item" onclick="copyEmoji('🛀')">🛀</span>
+                <span class="emoji-item" onclick="copyEmoji('🌳')">🌳</span>
+                <span class="emoji-item" onclick="copyEmoji('🚗')">🚗</span>
+                <span class="emoji-item" onclick="copyEmoji('🔑')">🔑</span>
+                <span class="emoji-item" onclick="copyEmoji('🚀')">🚀</span>
+                <span class="emoji-item" onclick="copyEmoji('🐾')">🐾</span>
+                <span class="emoji-item" onclick="copyEmoji('🌿')">🌿</span>
+                <span class="emoji-item" onclick="copyEmoji('⚠️')">⚠️</span>
+                <span class="emoji-item" onclick="copyEmoji('🆕')">🆕</span>
+            </div>
 
             <button class="btn btn-primary w-100 fw-bold py-2 shadow" onclick="inviaATelegram()" id="btnInvia">
                 <i class="fa-regular fa-paper-plane"></i> PUBBLICA SU CANALE AFFITTI
@@ -160,55 +157,55 @@
             reader.readAsDataURL(input.files[0]);
         }
     }
-async function cercaDati() {
-    const id = document.getElementById('idImmobile').value.trim();
-    if (!id) return;
-    setLoading(true);
-    
-    const isAffittoPage = window.location.pathname.includes('affitto');
-    const tipoParam = isAffittoPage ? '&tipo=affitto' : '';
 
-    try {
-        const r = await fetch(`${WORKER_URL}/get-immobile?id=${id}${tipoParam}`);
-        const d = await r.json();
+    async function cercaDati() {
+        const id = document.getElementById('idImmobile').value.trim();
+        if (!id) return;
+        setLoading(true);
         
-        if (d.success) {
-            urlOriginaleFoto = d.img;
-            document.getElementById('p-img').src = d.img;
-            document.getElementById('edit-titolo').value = d.tipologia;
-            document.getElementById('edit-indirizzo').value = d.comune + (d.via ? ", " + d.via : "");
-            document.getElementById('edit-mq').value = d.metri_quadri;
-            document.getElementById('edit-prezzo').value = d.prezzo;
-            document.getElementById('edit-link').value = d.link;
+        const isAffittoPage = window.location.pathname.includes('affitto');
+        const tipoParam = isAffittoPage ? '&tipo=affitto' : '';
 
-            // --- AGGIORNAMENTO ETICHETTA ---
-            const labelVani = document.querySelector('label[for="edit-camere"]');
-            if (labelVani) {
-                // Se il worker dice "Locali" (per Negozio/Ufficio/Capannone), lo scrive qui
-                labelVani.innerText = d.camereLabel; 
-            }
-            document.getElementById('edit-camere').value = d.camere;
-
-            // --- GESTIONE TERRENO ---
-            const divVani = document.getElementById('edit-camere').closest('.col-4') || document.getElementById('edit-camere').parentElement;
-            const divBagni = document.getElementById('edit-bagni').closest('.col-4') || document.getElementById('edit-bagni').parentElement;
+        try {
+            const r = await fetch(`${WORKER_URL}/get-immobile?id=${id}${tipoParam}`);
+            const d = await r.json();
             
-            if (d.tipologia === "Terreno") {
-                divVani.style.opacity = "0.2";
-                divBagni.style.opacity = "0.2";
-                document.getElementById('edit-camere').value = "0";
-                document.getElementById('edit-bagni').value = "0";
-            } else {
-                divVani.style.opacity = "1";
-                divBagni.style.opacity = "1";
-                document.getElementById('edit-bagni').value = d.bagni;
-            }
+            if (d.success) {
+                urlOriginaleFoto = d.img;
+                document.getElementById('p-img').src = d.img;
+                document.getElementById('edit-titolo').value = d.tipologia;
+                document.getElementById('edit-indirizzo').value = d.comune + (d.via ? ", " + d.via : "");
+                document.getElementById('edit-mq').value = d.metri_quadri;
+                document.getElementById('edit-prezzo').value = d.prezzo;
+                document.getElementById('edit-link').value = d.link;
 
-            document.getElementById('preview').style.display = 'block';
-        } else { alert("Immobile non trovato."); }
-    } catch (err) { alert("Errore caricamento."); }
-    finally { setLoading(false); }
-}
+                // --- AGGIORNAMENTO ETICHETTA ---
+                const labelVani = document.querySelector('label[for="edit-camere"]');
+                if (labelVani) {
+                    labelVani.innerText = d.camereLabel || "Camere"; 
+                }
+                document.getElementById('edit-camere').value = d.camere;
+
+                // --- GESTIONE TERRENO ---
+                const divVani = document.getElementById('edit-camere').closest('.col-4');
+                const divBagni = document.getElementById('edit-bagni').closest('.col-4');
+                
+                if (d.tipologia === "Terreno") {
+                    divVani.style.opacity = "0.2";
+                    divBagni.style.opacity = "0.2";
+                    document.getElementById('edit-camere').value = "0";
+                    document.getElementById('edit-bagni').value = "0";
+                } else {
+                    divVani.style.opacity = "1";
+                    divBagni.style.opacity = "1";
+                    document.getElementById('edit-bagni').value = d.bagni;
+                }
+
+                document.getElementById('preview').style.display = 'block';
+            } else { alert("Immobile non trovato."); }
+        } catch (err) { alert("Errore caricamento."); }
+        finally { setLoading(false); }
+    }
 
     async function inviaATelegram() {
         const btn = document.getElementById('btnInvia');
@@ -242,18 +239,9 @@ async function cercaDati() {
         document.getElementById('btnCerca').disabled = show;
     }
 
-
     function copyEmoji(emoji) {
-    // Copia negli appunti
-    navigator.clipboard.writeText(emoji).then(() => {
-        // Opzionale: un piccolo feedback visivo (es. un toast o un alert rapido)
-        console.log("Emoji copiata: " + emoji);
-    });
-    
-    // Suggerimento extra: se vuoi che cliccando l'emoji venga aggiunta 
-    // automaticamente in fondo al campo "Occupato" o "Titolo", usa questo:
-    // document.getElementById('edit-occupato').value += emoji;
-}
+        navigator.clipboard.writeText(emoji);
+    }
 </script>
 </body>
 </html>
