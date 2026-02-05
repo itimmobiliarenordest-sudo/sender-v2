@@ -118,29 +118,51 @@
         }
     }
 
-    async function cercaDati() {
-        const id = document.getElementById('idImmobile').value.trim();
-        if (!id) return;
-        setLoading(true);
-        try {
-            // NOTA: Aggiungiamo &tipo=affitto per dire al worker di cercare negli affitti
-            const r = await fetch(`${WORKER_URL}/get-immobile?id=${id}&tipo=affitto`);
-            const d = await r.json();
-            if (d.success) {
-                urlOriginaleFoto = d.img;
-                document.getElementById('p-img').src = d.img;
-                document.getElementById('edit-titolo').value = d.tipologia;
-                document.getElementById('edit-indirizzo').value = d.comune + (d.via ? ", " + d.via : "");
-                document.getElementById('edit-mq').value = d.metri_quadri;
-                document.getElementById('edit-camere').value = d.camere;
+async function cercaDati() {
+    const id = document.getElementById('idImmobile').value.trim();
+    if (!id) return;
+    setLoading(true);
+    try {
+        // Se sei in affitto.html usa &tipo=affitto, altrimenti lascialo vuoto per vendita
+        const r = await fetch(`${WORKER_URL}/get-immobile?id=${id}${window.location.pathname.includes('affitto') ? '&tipo=affitto' : ''}`);
+        const d = await r.json();
+        
+        if (d.success) {
+            urlOriginaleFoto = d.img;
+            document.getElementById('p-img').src = d.img;
+            document.getElementById('edit-titolo').value = d.tipologia;
+            document.getElementById('edit-indirizzo').value = d.comune + (d.via ? ", " + d.via : "");
+            document.getElementById('edit-mq').value = d.metri_quadri;
+            document.getElementById('edit-prezzo').value = d.prezzo;
+            document.getElementById('edit-link').value = d.link;
+
+            // --- GESTIONE DINAMICA ETICHETTA CAMERE/LOCALI ---
+            const labelVani = document.querySelector('label[for="edit-camere"]') || document.querySelector('#edit-camere').previousElementSibling;
+            if (labelVani) {
+                labelVani.innerText = d.camereLabel; // "Camere" oppure "Locali"
+            }
+            document.getElementById('edit-camere').value = d.camere;
+
+            // --- GESTIONE TERRENO (NASCONDE CAMPI INUTILI) ---
+            const divVani = document.getElementById('edit-camere').parentElement;
+            const divBagni = document.getElementById('edit-bagni').parentElement;
+            
+            if (d.tipologia === "Terreno") {
+                divVani.style.opacity = "0.3"; // Lo rendiamo quasi invisibile per far capire che non serve
+                divBagni.style.opacity = "0.3";
+                document.getElementById('edit-camere').value = "0";
+                document.getElementById('edit-bagni').value = "0";
+            } else {
+                divVani.style.opacity = "1";
+                divBagni.style.opacity = "1";
                 document.getElementById('edit-bagni').value = d.bagni;
-                document.getElementById('edit-prezzo').value = d.prezzo;
-                document.getElementById('edit-link').value = d.link;
-                document.getElementById('preview').style.display = 'block';
-            } else { alert("Affitto non trovato."); }
-        } catch (err) { alert("Errore API."); }
-        finally { setLoading(false); }
-    }
+            }
+
+            document.getElementById('preview').style.display = 'block';
+        } else { alert("Immobile non trovato."); }
+    } catch (err) { alert("Errore API."); }
+    finally { setLoading(false); }
+}
 
     async function inviaATelegram() {
         const btn = document.getElementById('btnInvia');
