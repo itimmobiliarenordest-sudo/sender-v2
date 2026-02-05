@@ -69,7 +69,7 @@
                     <input type="text" id="edit-mq" class="form-control form-control-sm">
                 </div>
                 <div class="col-4">
-                    <label class="form-label-sm">CAMERE</label>
+                    <label class="form-label-sm" id="label-camere">CAMERE</label>
                     <input type="text" id="edit-camere" class="form-control form-control-sm">
                 </div>
                 <div class="col-4">
@@ -95,7 +95,6 @@
     let fotoBase64 = null;
     let urlOriginaleFoto = "";
 
-    // Funzione che controlla se il Worker è in modalità DEBUG
     async function controllaStato() {
         const title = document.getElementById('main-title');
         const banner = document.getElementById('status-banner');
@@ -121,7 +120,6 @@
         }
     }
 
-    // Esegui il controllo stato al caricamento
     window.onload = controllaStato;
 
     function anteprimaFotoLocale(input) {
@@ -171,6 +169,25 @@
         document.getElementById('edit-bagni').value = d.bagni;
         document.getElementById('edit-prezzo').value = d.prezzo;
         document.getElementById('edit-link').value = d.link;
+        
+        // --- LOGICA LOCALI / TERRENO ---
+        const labelCamere = document.getElementById('label-camere');
+        const divCamere = document.getElementById('edit-camere').parentElement;
+        const divBagni = document.getElementById('edit-bagni').parentElement;
+
+        // Aggiorna etichetta (Camere o Locali)
+        if (labelCamere) {
+            labelCamere.innerText = d.camereLabel ? d.camereLabel.toUpperCase() : "CAMERE";
+        }
+
+        // Se Terreno, sbiadisce campi inutili
+        if (d.tipologia === "Terreno") {
+            divCamere.style.opacity = "0.3";
+            divBagni.style.opacity = "0.3";
+        } else {
+            divCamere.style.opacity = "1";
+            divBagni.style.opacity = "1";
+        }
         
         document.getElementById('preview').style.display = 'block';
     }
